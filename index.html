@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MyReversi - OOAD Online & Local</title>
+<style>
+  :root {
+    --bg-dark: #1d3261;
+    --bg-check: #253e75;
+    --panel-bg: #27417a;
+    --board-light: #639649;
+    --board-dark: #4f7d38;
+    --accent-blue: #6d92e8;
+    --gold-win: #f5df76;
+    --btn-red: #8c2318;
+  }
+
+  * {
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-dark);
+    background-image:
+      linear-gradient(45deg, var(--bg-check) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--bg-check) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--bg-check) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--bg-check) 75%);
+    background-size: 90px 90px;
+    background-position: 0 0, 0 45px, 45px -45px, -45px 0;
+    color: #fff;
+  }
+
+  .title-banner { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; }
+  .title-banner h1 {
+    font-size: 3.2rem; font-weight: 900; font-style: italic; margin: 0; letter-spacing: 2px; color: #fff;
+    text-shadow: -2px -2px 0 var(--accent-blue), 2px -2px 0 var(--accent-blue), -2px 2px 0 var(--accent-blue), 2px 2px 0 var(--accent-blue), 4px 5px 0 #0b1326;
+  }
+  .title-disc { width: 44px; height: 44px; border-radius: 50%; box-shadow: 0 5px 8px rgba(0,0,0,0.45); }
+  .title-disc.black { background: radial-gradient(circle at 30% 30%, #4a4a4a, #0e0e0e); border: 3px solid #222; }
+  .title-disc.white { background: radial-gradient(circle at 30% 30%, #ffffff, #cfd6e3); border: 3px solid #e1e6f0; }
+
+  .menu-btn {
+    width: 260px; padding: 14px 20px; margin: 10px 0; font-size: 1.1rem; font-weight: 800;
+    text-transform: uppercase; color: #111; background: #fff; border: 3px solid var(--accent-blue);
+    border-radius: 12px; box-shadow: 0 5px 0 #0d1730; cursor: pointer; transition: transform 0.08s;
+  }
+  .menu-btn:hover:not(:disabled) { background: #f0f4ff; transform: translateY(-2px); }
+  .menu-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+
+  .card-panel {
+    background: #fff; color: #1c2e59; padding: 28px 34px; border-radius: 14px;
+    box-shadow: 0 10px 0 #0d1730; width: 370px; text-align: center;
+  }
+  .card-ribbon {
+    background: #5a606e; color: #fff; font-weight: 800; font-style: italic;
+    padding: 6px 22px; border-radius: 4px; display: inline-block; margin-bottom: 18px; text-transform: uppercase;
+  }
+  .card-panel label { display: block; font-weight: 800; font-size: 0.95rem; margin: 12px 0 6px; text-align: left; }
+  .card-panel input {
+    width: 100%; padding: 10px 12px; font-size: 1rem; border: 1px solid #999;
+    background: #efefef; border-radius: 4px; margin-bottom: 10px;
+  }
+
+  .game-frame {
+    background: var(--panel-bg); border: 6px solid #355394; border-radius: 8px;
+    padding: 26px; display: flex; gap: 32px; align-items: center; box-shadow: 0 14px 30px rgba(0,0,0,0.45);
+  }
+  .board-grid {
+    display: grid; grid-template-columns: repeat(8, 52px); grid-template-rows: repeat(8, 52px);
+    border: 4px solid #111; background: #111;
+  }
+  .cell { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .cell.light { background-color: var(--board-light); }
+  .cell.dark { background-color: var(--board-dark); }
+  .cell:hover { filter: brightness(1.08); }
+
+  .disc { width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 3px 5px rgba(0,0,0,0.5); }
+  .disc.Black { background: radial-gradient(circle at 32% 32%, #4e4e4e, #0f0f0f); border: 2px solid #000; }
+  .disc.White { background: radial-gradient(circle at 32% 32%, #ffffff, #d3dae6); border: 2px solid #b8c2d4; }
+  .valid-hint { width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(25, 45, 18, 0.75); pointer-events: none; }
+
+  .sidebar { background: #fff; color: #111; width: 280px; border-radius: 12px; padding: 20px; box-shadow: 0 8px 0 #142347; text-align: center; }
+  .player-row { display: flex; align-items: center; justify-content: space-between; margin: 14px 0; padding: 6px 10px; border-radius: 25px; background: #e6e8ed; border: 2px solid transparent; }
+  .player-row.active-turn { border-color: #2c6bed; box-shadow: 0 0 8px rgba(44, 107, 237, 0.4); }
+  .player-row.black-bar { background: #333; color: #fff; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: #b5bcc9; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+  .score-badge { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.1rem; }
+  .score-badge.Black { background: #111; color: #fff; border: 2px solid #555; }
+  .score-badge.White { background: #fff; color: #111; border: 2px solid #ccc; }
+  .turn-label { font-weight: 900; color: #2c437a; margin-top: 16px; font-size: 1.05rem; text-transform: uppercase; }
+  .clock-display { font-size: 1.5rem; font-weight: 900; color: #3e7a2b; margin: 4px 0 18px; }
+  .clock-display.low-time { color: #b81d13; }
+  .action-row { display: flex; gap: 8px; justify-content: center; align-items: center; }
+  .small-btn { padding: 8px 14px; border: none; border-radius: 6px; font-weight: 800; color: #fff; cursor: pointer; font-size: 0.85rem; text-transform: uppercase; }
+  .btn-forfeit { background: var(--btn-red); }
+  .btn-rules { background: #23386b; }
+  .btn-settings { background: #4b556b; font-size: 1rem; padding: 6px 10px; }
+  .toast-msg { margin-top: 12px; min-height: 22px; font-size: 0.9rem; font-weight: 700; color: #b81d13; }
+
+  .overlay-backdrop { position: fixed; inset: 0; background: rgba(10, 18, 38, 0.78); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .win-modal { background: var(--gold-win); color: #111; border: 4px solid #111; border-radius: 22px; padding: 32px 44px; text-align: center; box-shadow: 0 14px 35px rgba(0,0,0,0.6); max-width: 540px; }
+  .win-title { font-size: 2.5rem; font-weight: 900; color: #3d7529; margin: 0 0 14px; text-shadow: 1px 1px 0 #1e3b14; }
+  .win-scores { font-size: 1.3rem; font-weight: 900; line-height: 1.6; margin-bottom: 16px; }
+  .rematch-status-banner { font-weight: 800; font-size: 1rem; margin-bottom: 16px; padding: 10px 14px; border-radius: 10px; background: rgba(255,255,255,0.75); color: #1c2e59; }
+  .rematch-status-banner.refused { background: #f8d7da; color: #842029; border: 2px solid #842029; }
+  .modal-box { background: #fff; color: #18284d; border-radius: 16px; padding: 26px 32px; max-width: 460px; text-align: left; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+  <div class="title-banner">
+    <div class="title-disc black"></div>
+    <h1>MY REVERSI</h1>
+    <div class="title-disc white"></div>
+  </div>
+
+  <!-- Screen 1: Main Menu -->
+  <div id="screen-main" style="display:flex; flex-direction:column; align-items:center;">
+    <button class="menu-btn" onclick="ui.onMenuChoice('local')">Play Local (1v1)</button>
+    <button class="menu-btn" onclick="ui.onMenuChoice('online')">Play Online</button>
+    <button class="menu-btn" onclick="ui.onMenuChoice('bot')">Play Against AI</button>
+    <button class="menu-btn" onclick="ui.onMenuChoice('quit')">Quit Game</button>
+  </div>
+
+  <!-- Screen 2: Name Entry -->
+  <div id="screen-names" class="card-panel hidden">
+    <div id="name-ribbon" class="card-ribbon">ENTER PLAYER NAME</div>
+    <label for="input-p1">PLAYER 1 ENTER YOUR NAME:</label>
+    <input id="input-p1" type="text" placeholder="Enter your name..." />
+
+    <div id="p2-input-group" class="hidden">
+      <label for="input-p2">PLAYER 2 ENTER YOUR NAME:</label>
+      <input id="input-p2" type="text" placeholder="Enter Player 2 name..." />
+    </div>
+
+    <div id="name-error" style="color:#b81d13; font-weight:700; font-size:0.88rem; min-height:20px;"></div>
+    <button id="btn-submit-names" class="menu-btn" style="width:100%; margin-top:8px;" onclick="ui.submitNames()">Continue</button>
+    <button class="small-btn btn-settings" style="width:100%; margin-top:6px;" onclick="ui.showMenu('MainMenu')">Back</button>
+  </div>
+
+  <!-- Screen 3: Online Mode Selection -->
+  <div id="screen-online" class="card-panel hidden">
+    <div class="card-ribbon">ONLINE MULTIPLAYER</div>
+    <p id="online-status" style="font-weight:700; color:#2b4a8c;">Connecting to Server...</p>
+
+    <button class="menu-btn" style="width:100%;" onclick="ui.onMenuChoice('randomQueue')">Random Opponent</button>
+    <button class="menu-btn" style="width:100%;" onclick="ui.onMenuChoice('createPrivate')">Create Private Game</button>
+
+    <div style="margin-top:12px; border-top:1px solid #ddd; padding-top:12px;">
+      <label for="input-room-code">JOIN PRIVATE GAME (4-CHAR CODE):</label>
+      <input id="input-room-code" type="text" maxlength="4" placeholder="e.g. K7P2" style="text-transform:uppercase;" />
+      <button class="menu-btn" style="width:100%;" onclick="ui.onMenuChoice('joinPrivate')">Join Room</button>
+    </div>
+
+    <div id="waiting-box" class="hidden" style="margin-top:14px; padding:12px; background:#eef3ff; border-radius:8px;">
+      <div id="waiting-text" style="font-weight:800;">Waiting for opponent...</div>
+      <button class="small-btn btn-forfeit" style="margin-top:8px;" onclick="ui.onMenuChoice('cancelSearch')">Cancel</button>
+    </div>
+
+    <button class="small-btn btn-settings" style="width:100%; margin-top:12px;" onclick="ui.showMenu('MainMenu')">Back to Menu</button>
+  </div>
+
+  <!-- Screen 4: Active Game Screen -->
+  <div id="screen-game" class="game-frame hidden">
+    <div id="board-container" class="board-grid"></div>
+
+    <div class="sidebar">
+      <div id="match-mode-ribbon" class="card-ribbon">MATCH</div>
+
+      <div id="card-black" class="player-row black-bar">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="avatar">🧑</div>
+          <strong id="name-black">Black</strong>
+        </div>
+        <div id="score-black" class="score-badge Black">2</div>
+      </div>
+
+      <div id="card-white" class="player-row">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="avatar" id="avatar-white">🧑</div>
+          <strong id="name-white">White</strong>
+        </div>
+        <div id="score-white" class="score-badge White">2</div>
+      </div>
+
+      <div id="turn-indicator" class="turn-label">YOUR TURN:</div>
+      <div id="clock-text" class="clock-display">01:00</div>
+
+      <div class="action-row">
+        <button class="small-btn btn-forfeit" onclick="ui.onMenuChoice('forfeit')">Forfeit</button>
+        <button class="small-btn btn-rules" onclick="ui.onMenuChoice('rules')">Rules</button>
+        <button class="small-btn btn-settings" onclick="ui.onMenuChoice('settings')">⚙️</button>
+      </div>
+
+      <div id="game-toast" class="toast-msg"></div>
+    </div>
+  </div>
+
+  <!-- Overlay: Rules / Settings / Local Rematch Prompt -->
+  <div id="overlay-info" class="overlay-backdrop hidden">
+    <div class="modal-box">
+      <h2 id="modal-title" style="margin-top:0;">Reversi Rules</h2>
+      <div id="modal-body" style="line-height:1.6; font-size:0.95rem;"></div>
+      <button id="modal-close-btn" class="menu-btn" style="width:100%; margin-top:18px;" onclick="ui.closeOverlay()">Return to Game</button>
+    </div>
+  </div>
+
+  <!-- Overlay: Game Over / Win Screen -->
+  <div id="overlay-gameover" class="overlay-backdrop hidden">
+    <div class="win-modal">
+      <div id="win-headline" class="win-title">🏆 YOU WIN ! 🏆</div>
+      <div id="win-scoreboard" class="win-scores"></div>
+
+      <div id="rematch-banner" class="rematch-status-banner hidden"></div>
+
+      <div id="rematch-response-actions" class="hidden" style="display:flex; gap:12px; justify-content:center; margin-bottom:14px;">
+        <button class="menu-btn" style="width:160px; border-color:#2e7d32;" onclick="ui.onMenuChoice('acceptRematch')">Accept</button>
+        <button class="menu-btn" style="width:160px; border-color:#8c2318; color:#8c2318;" onclick="ui.onMenuChoice('refuseRematch')">Refuse</button>
+      </div>
+
+      <div id="gameover-default-actions" style="display:flex; gap:14px; justify-content:center;">
+        <button id="btn-rematch" class="menu-btn" style="width:210px;" onclick="ui.onMenuChoice('newGame')">Rematch</button>
+        <button id="btn-return-menu" class="menu-btn" style="width:160px;" onclick="ui.showMenu('MainMenu')">Menu</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+// REPLACE THIS WITH YOUR RENDER SERVICE URL AFTER DEPLOYING PART 1:
+const SERVER_WS_URL = "wss://YOUR-RENDER-APP.onrender.com";
+
+/**
+ * ============================================================================
+ * 1. CLIENT-SIDE DOMAIN CLASSES (Used for Local 1v1 & Offline Bot)
+ * ============================================================================
+ */
+class Position {
+  constructor(x, y) { this.X = x; this.Y = y; }
+  getX() { return this.X; }
+  getY() { return this.Y; }
+}
+
+class Disc {
+  constructor(color) { this.color = color; }
+  flip() { this.color = this.color === "Black" ? "White" : "Black"; }
+  getColor() { return this.color; }
+}
+
+class Clock {
+  constructor(timeLimit) {
+    this.timeLimit = timeLimit;
+    this.timeRemaining = timeLimit;
+    this.isRunning = false;
+    this._intervalId = null;
+    this.onTick = null;
+    this.onExpire = null;
+  }
+  start() {
+    if (this.isRunning) return;
+    this.isRunning = true;
+    this._intervalId = setInterval(() => {
+      if (!this.isRunning) return;
+      this.timeRemaining--;
+      if (this.onTick) this.onTick(this.timeRemaining);
+      if (this.timeRemaining <= 0) {
+        this.stop();
+        if (this.onExpire) this.onExpire();
+      }
+    }, 1000);
+  }
+  stop() {
+    this.isRunning = false;
+    if (this._intervalId) { clearInterval(this._intervalId); this._intervalId = null; }
+  }
+  getTimeRemaining() { return this.timeRemaining; }
+  reset() { this.stop(); this.timeRemaining = this.timeLimit; }
+}
+
+class Board {
+  constructor() {
+    this.grid = Array.from({ length: 8 }, () => Array(8).fill(null));
+    this.dX = [-1, -1, 0, 1, 1, 1, 0, -1];
+    this.dY = [0, 1, 1, 1, 0, -1, -1, -1];
+  }
+  Initialize() {
+    for (let r = 0; r < 8; r++)
+      for (let c = 0; c < 8; c++)
+        this.grid[r][c] = null;
+    this.grid[3][3] = new Disc("White");
+    this.grid[3][4] = new Disc("Black");
+    this.grid[4][3] = new Disc("Black");
+    this.grid[4][4] = new Disc("White");
+  }
+  _getBracketedDiscs(pos, color) {
+    const bracketed = [];
+    const opp = color === "Black" ? "White" : "Black";
+    for (let dir = 0; dir < 8; dir++) {
+      const line = [];
+      let cx = pos.getX() + this.dX[dir], cy = pos.getY() + this.dY[dir];
+      while (cx >= 0 && cx < 8 && cy >= 0 && cy < 8) {
+        const cur = this.grid[cx][cy];
+        if (!cur) { line.length = 0; break; }
+        if (cur.getColor() === opp) line.push(cur);
+        else if (cur.getColor() === color) { bracketed.push(...line); break; }
+        cx += this.dX[dir]; cy += this.dY[dir];
+      }
+    }
+    return bracketed;
+  }
+  isValidMove(pos, color) {
+    const x = pos.getX(), y = pos.getY();
+    if (x < 0 || x >= 8 || y < 0 || y >= 8 || this.grid[x][y] !== null) return false;
+    return this._getBracketedDiscs(pos, color).length > 0;
+  }
+  placeDisc(move, color) {
+    if (!this.isValidMove(move, color)) return;
+    const toFlip = this._getBracketedDiscs(move, color);
+    this.grid[move.getX()][move.getY()] = new Disc(color);
+    toFlip.forEach(d => d.flip());
+  }
+  getValidMoves(color) {
+    const moves = [];
+    for (let r = 0; r < 8; r++)
+      for (let c = 0; c < 8; c++)
+        if (this.isValidMove(new Position(r, c), color)) moves.push(new Position(r, c));
+    return moves;
+  }
+  IsFull() { return this.grid.every(row => row.every(cell => cell !== null)); }
+  NoMoreMoves(color) { return this.getValidMoves(color).length === 0; }
+  countDiscs(color) {
+    let count = 0;
+    for (let r = 0; r < 8; r++)
+      for (let c = 0; c < 8; c++)
+        if (this.grid[r][c] && this.grid[r][c].getColor() === color) count++;
+    return count;
+  }
+}
+
+class Player {
+  constructor(name, color, isBot) {
+    this.name = name;
+    this.color = color;
+    this.isBot = isBot;
+    this.Timer = new Clock(60);
+    this.hasForfeited = false;
+  }
+  Forfeit() { this.hasForfeited = true; this.Timer.stop(); }
+  NewGame() { this.hasForfeited = false; this.Timer.reset(); }
+  GetRules() {
+    return `
+      <ul>
+        <li><strong>Black always plays first.</strong></li>
+        <li>Place a disc on an empty square to outflank one or more opponent discs horizontally, vertically, or diagonally.</li>
+        <li>All bracketed opponent discs flip to your color.</li>
+        <li>If you have no valid moves, your turn is skipped.</li>
+        <li>The game ends when the board is full, neither player can move, a player forfeits, or a 60-second clock expires.</li>
+      </ul>
+    `;
+  }
+}
+
+class Game {
+  constructor(blackPlayer, whitePlayer) {
+    this.board = new Board();
+    this.players = [blackPlayer, whitePlayer];
+    this.currentTurn = blackPlayer;
+    this.onStateChange = null;
+    this.onNotification = null;
+    this.onGameOverCallback = null;
+
+    for (const p of this.players) {
+      p.Timer.onExpire = () => {
+        p.Forfeit();
+        if (this.onNotification) this.onNotification(`${p.name}'s timer expired!`);
+        if (this.onGameOverCallback) this.onGameOverCallback(this.getWinner());
+      };
+    }
+  }
+  startVSPlayer() {
+    this.board.Initialize();
+    this.players.forEach(p => p.NewGame());
+    this.currentTurn = this.players[0];
+    this.currentTurn.Timer.start();
+    if (this.onStateChange) this.onStateChange();
+  }
+  startVSBot() {
+    this.startVSPlayer();
+    if (this.currentTurn.isBot) setTimeout(() => this.MakeBotMove(this.currentTurn), 600);
+  }
+  processMove(player, pos) {
+    if (player !== this.currentTurn || this.isGameOver()) return false;
+    if (!this.board.isValidMove(pos, player.color)) return false;
+    this.board.placeDisc(pos, player.color);
+    player.Timer.stop();
+    if (this.isGameOver()) {
+      if (this.onStateChange) this.onStateChange();
+      if (this.onGameOverCallback) this.onGameOverCallback(this.getWinner());
+      return true;
+    }
+    this.switchTurn(this.isBotGame(this.players));
+    return true;
+  }
+  switchTurn(isBotGame) {
+    const next = this.currentTurn === this.players[0] ? this.players[1] : this.players[0];
+    if (this.board.NoMoreMoves(next.color)) {
+      if (this.board.NoMoreMoves(this.currentTurn.color)) {
+        if (this.onStateChange) this.onStateChange();
+        if (this.onGameOverCallback) this.onGameOverCallback(this.getWinner());
+        return;
+      }
+      if (this.onNotification) this.onNotification(`No moves available for ${next.name}: turn skipped!`);
+      this.currentTurn.Timer.reset();
+      this.currentTurn.Timer.start();
+      if (this.onStateChange) this.onStateChange();
+      if (isBotGame && this.currentTurn.isBot) setTimeout(() => this.MakeBotMove(this.currentTurn), 650);
+      return;
+    }
+    this.currentTurn = next;
+    this.currentTurn.Timer.reset();
+    this.currentTurn.Timer.start();
+    if (this.onStateChange) this.onStateChange();
+    if (isBotGame && this.currentTurn.isBot) setTimeout(() => this.MakeBotMove(this.currentTurn), 650);
+  }
+  isGameOver() {
+    if (this.players.some(p => p.hasForfeited)) return true;
+    if (this.board.IsFull()) return true;
+    if (this.board.NoMoreMoves("Black") && this.board.NoMoreMoves("White")) return true;
+    return false;
+  }
+  getWinner() {
+    const forfeited = this.players.find(p => p.hasForfeited);
+    if (forfeited) return this.players.find(p => p !== forfeited);
+    const b = this.board.countDiscs("Black"), w = this.board.countDiscs("White");
+    if (b > w) return this.players[0];
+    if (w > b) return this.players[1];
+    return null;
+  }
+  isBotGame(players) { return players.some(p => p.isBot); }
+  FindPlayer() { return this.currentTurn; }
+  MakeBotMove(bot) {
+    if (this.isGameOver() || this.currentTurn !== bot) return;
+    const valid = this.board.getValidMoves(bot.color);
+    if (valid.length === 0) return;
+    const weights = [
+      [100, -20, 10,  5,  5, 10, -20, 100],
+      [-20, -50, -2, -2, -2, -2, -50, -20],
+      [ 10,  -2,  1,  1,  1,  1,  -2,  10],
+      [  5,  -2,  1,  1,  1,  1,  -2,   5],
+      [  5,  -2,  1,  1,  1,  1,  -2,   5],
+      [ 10,  -2,  1,  1,  1,  1,  -2,  10],
+      [-20, -50, -2, -2, -2, -2, -50, -20],
+      [100, -20, 10,  5,  5, 10, -20, 100]
+    ];
+    valid.sort((a, b) => weights[b.getX()][b.getY()] - weights[a.getX()][a.getY()]);
+    this.processMove(bot, valid[0]);
+  }
+}
+
+/**
+ * ============================================================================
+ * 2. CLIENT CLASS (Supports Local Games + Real WebSocket Connection to Render)
+ * ============================================================================
+ */
+class Client {
+  constructor(localPlayer) {
+    this.serverAddress = null;
+    this.connectionCode = null;
+    this.localPlayer = localPlayer;
+    this.game = null;
+    this.isConnected = false;
+    this.socket = null;
+    this.ui = null;
+    this.onlinePlayers = { Black: "Black", White: "White" };
+    this.onlineClockInterval = null;
+    this.onlineTimeRemaining = 60;
+  }
+
+  connect(address) {
+    this.disconnect();
+    this.serverAddress = address;
+    document.getElementById("online-status").textContent = "Waking up server (may take ~30s on free tier)...";
+
+    this.socket = new WebSocket(address);
+
+    this.socket.onopen = () => {
+      this.isConnected = true;
+      document.getElementById("online-status").textContent =
+        `Connected as "${this.localPlayer.name}"`;
+    };
+
+    this.socket.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      this.onMessageReceived(msg);
+    };
+
+    this.socket.onerror = () => {
+      document.getElementById("online-status").textContent =
+        "Connection failed. Check SERVER_WS_URL in index.html.";
+    };
+
+    this.socket.onclose = () => {
+      this.isConnected = false;
+      this._stopOnlineClock();
+    };
+  }
+
+  disconnect() {
+    this._stopOnlineClock();
+    if (this.socket) {
+      this.socket.close();
+      this.socket = null;
+    }
+    this.isConnected = false;
+    this.connectionCode = null;
+  }
+
+  _sendPacket(payload) {
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify({ ...payload, name: this.localPlayer.name }));
+    } else {
+      alert("Still connecting to server—please wait a few seconds and try again.");
+    }
+  }
+
+  createPrivateGame() {
+    this._sendPacket({ type: "CREATE_PRIVATE" });
+  }
+
+  joinPrivateGame(code) {
+    this._sendPacket({ type: "JOIN_PRIVATE", code });
+  }
+
+  joinRandomQueue() {
+    this._sendPacket({ type: "JOIN_QUEUE" });
+  }
+
+  cancelSearch() {
+    this._sendPacket({ type: "CANCEL_SEARCH" });
+  }
+
+  // Offline Local 1v1 or AI Match
+  startLocalMatch(p1Name, p2Name, vsBot) {
+    this.disconnect();
+    this.localPlayer = new Player(p1Name, "Black", false);
+    const opponent = new Player(vsBot ? "Bob" : p2Name, "White", vsBot);
+    this.game = new Game(this.localPlayer, opponent);
+
+    this.game.onStateChange = () => this.ui.drawLocalBoard(this.game.board);
+    this.game.onNotification = (msg) => this.ui.showToast(msg);
+    this.game.onGameOverCallback = (winner) => {
+      this.game.players.forEach(p => p.Timer.stop());
+      this.ui.showResultScreen(
+        winner ? winner.name : null,
+        this.game.board.countDiscs("Black"),
+        this.game.board.countDiscs("White"),
+        vsBot
+      );
+    };
+
+    for (const p of this.game.players) {
+      p.Timer.onTick = () => {
+        if (this.game.FindPlayer() === p) this.ui.displayClockSeconds(p.Timer.getTimeRemaining());
+      };
+    }
+
+    if (vsBot) this.game.startVSBot();
+    else this.game.startVSPlayer();
+
+    this.ui.showGameScreen(vsBot ? "MATCH AGAINST AI" : "1V1 LOCAL MATCH");
+    this.ui.drawLocalBoard(this.game.board);
+  }
+
+  sendMove(pos) {
+    if (this.isConnected) {
+      this._sendPacket({ type: "MAKE_MOVE", x: pos.getX(), y: pos.getY() });
+    } else if (this.game) {
+      const active = this.game.FindPlayer();
+      if (active.isBot) return;
+      if (!this.game.processMove(active, pos)) {
+        this.ui.showToast("Invalid move! Click a highlighted circle.");
+      }
+    }
+  }
+
+  sendForfeit() {
+    if (this.isConnected) {
+      this._sendPacket({ type: "FORFEIT" });
+    } else if (this.game) {
+      this.game.FindPlayer().Forfeit();
+      const winner = this.game.getWinner();
+      this.ui.showResultScreen(
+        winner ? winner.name : null,
+        this.game.board.countDiscs("Black"),
+        this.game.board.countDiscs("White"),
+        this.game.isBotGame(this.game.players)
+      );
+    }
+  }
+
+  requestRematch() {
+    if (this.isConnected) {
+      this.ui.setRematchWaiting();
+      this._sendPacket({ type: "REMATCH_REQUEST" });
+    } else if (this.game) {
+      const isBot = this.game.isBotGame(this.game.players);
+      if (isBot) {
+        this.startLocalMatch(this.game.players[0].name, "Bob", true);
+      } else {
+        this.ui.showLocalRematchPrompt(this.game.players[0].name, this.game.players[1].name);
+      }
+    }
+  }
+
+  acceptRematch() {
+    if (this.isConnected) this._sendPacket({ type: "REMATCH_ACCEPTED" });
+  }
+
+  refuseRematch() {
+    if (this.isConnected) this._sendPacket({ type: "REMATCH_REFUSED" });
+    this.ui.handleRematchRefused("You refused the rematch.");
+  }
+
+  _startOnlineClock(initialSeconds) {
+    this._stopOnlineClock();
+    this.onlineTimeRemaining = initialSeconds;
+    this.ui.displayClockSeconds(this.onlineTimeRemaining);
+    this.onlineClockInterval = setInterval(() => {
+      if (this.onlineTimeRemaining > 0) {
+        this.onlineTimeRemaining--;
+        this.ui.displayClockSeconds(this.onlineTimeRemaining);
+      }
+    }, 1000);
+  }
+
+  _stopOnlineClock() {
+    if (this.onlineClockInterval) {
+      clearInterval(this.onlineClockInterval);
+      this.onlineClockInterval = null;
+    }
+  }
+
+  onMessageReceived(msg) {
+    switch (msg.type) {
+      case "ROOM_CREATED":
+        this.connectionCode = msg.code;
+        document.getElementById("waiting-box").classList.remove("hidden");
+        document.getElementById("waiting-text").textContent =
+          `Room Code: ${msg.code} — Share this code with your friend!`;
+        break;
+
+      case "GAME_STARTED":
+        this.connectionCode = msg.roomCode;
+        this.localPlayer.color = msg.assignedColor;
+        this.onlinePlayers = { Black: msg.blackName, White: msg.whiteName };
+        this.ui.showGameScreen(`ONLINE ROOM: ${msg.roomCode}`);
+        break;
+
+      case "STATE_UPDATE":
+        this.ui.drawOnlineBoard(msg.grid, msg.currentTurnColor, msg.validMoves, this.onlinePlayers, this.localPlayer.color);
+        this._startOnlineClock(msg.timeRemaining);
+        if (msg.notice) this.ui.showToast(msg.notice);
+        break;
+
+      case "ERROR":
+        if (this.ui.currentScreen === "OnlineMenu") {
+          document.getElementById("waiting-box").classList.add("hidden");
+          alert(msg.message);
+        } else {
+          this.ui.showToast(msg.message);
+        }
+        break;
+
+      case "GAME_OVER":
+        this._stopOnlineClock();
+        this.ui.showResultScreen(msg.winnerName, msg.blackScore, msg.whiteScore, false);
+        break;
+
+      case "REMATCH_REQUEST":
+        this.ui.showIncomingRematchRequest(msg.senderName);
+        break;
+
+      case "REMATCH_REFUSED":
+        this.ui.handleRematchRefused(`${msg.senderName} refused the rematch.`);
+        break;
+    }
+  }
+}
+
+/**
+ * ============================================================================
+ * 3. UI CONTROLLER
+ * ============================================================================
+ */
+class UI {
+  constructor(client) {
+    this.client = client;
+    this.client.ui = this;
+    this.currentScreen = "MainMenu";
+    this.pendingMode = "local";
+    this.showHints = true;
+    this.lastOnlineState = null;
+  }
+
+  showMenu(menuName) {
+    this.currentScreen = menuName;
+    if (this.client.game) this.client.game.players.forEach(p => p.Timer.stop());
+    if (menuName === "MainMenu") this.client.disconnect();
+
+    ["screen-main", "screen-names", "screen-online", "screen-game", "overlay-gameover", "overlay-info"]
+      .forEach(id => document.getElementById(id).classList.add("hidden"));
+
+    if (menuName === "MainMenu") document.getElementById("screen-main").classList.remove("hidden");
+    else if (menuName === "NameEntry") {
+      document.getElementById("name-error").textContent = "";
+      document.getElementById("screen-names").classList.remove("hidden");
+      document.getElementById("input-p1").focus();
+    } else if (menuName === "OnlineMenu") {
+      document.getElementById("screen-online").classList.remove("hidden");
+      document.getElementById("waiting-box").classList.add("hidden");
+    }
+  }
+
+  showGameScreen(modeTitle) {
+    this.currentScreen = "InGame";
+    ["screen-main", "screen-names", "screen-online", "overlay-gameover", "overlay-info"]
+      .forEach(id => document.getElementById(id).classList.add("hidden"));
+    document.getElementById("screen-game").classList.remove("hidden");
+    document.getElementById("match-mode-ribbon").textContent = modeTitle;
+    document.getElementById("game-toast").textContent = "";
+  }
+
+  showResultScreen(winnerName, blackScore, whiteScore, isBot) {
+    this.currentScreen = "GameOver";
+    const headline = document.getElementById("win-headline");
+    headline.textContent = winnerName ? `🏆 ${winnerName.toUpperCase()} WINS ! 🏆` : "🤝 IT'S A TIE ! 🤝";
+
+    const blackName = this.client.isConnected ? this.client.onlinePlayers.Black : this.client.game.players[0].name;
+    const whiteName = this.client.isConnected ? this.client.onlinePlayers.White : this.client.game.players[1].name;
+
+    document.getElementById("win-scoreboard").innerHTML = `
+      ${blackName.toUpperCase()}'S SCORE: ${blackScore}<br/>
+      ${whiteName.toUpperCase()}'S SCORE: ${whiteScore}
+    `;
+
+    const banner = document.getElementById("rematch-banner");
+    banner.classList.add("hidden");
+    banner.classList.remove("refused");
+
+    document.getElementById("rematch-response-actions").classList.add("hidden");
+    document.getElementById("gameover-default-actions").classList.remove("hidden");
+
+    const rematchBtn = document.getElementById("btn-rematch");
+    rematchBtn.classList.remove("hidden");
+    rematchBtn.disabled = false;
+    rematchBtn.textContent = isBot ? "Start a New Game" : "Rematch";
+
+    document.getElementById("overlay-gameover").classList.remove("hidden");
+  }
+
+  setRematchWaiting() {
+    const btn = document.getElementById("btn-rematch");
+    btn.disabled = true;
+    btn.textContent = "Waiting...";
+    const banner = document.getElementById("rematch-banner");
+    banner.textContent = "Rematch request sent. Waiting for opponent to accept...";
+    banner.classList.remove("hidden", "refused");
+  }
+
+  showIncomingRematchRequest(opponentName) {
+    const banner = document.getElementById("rematch-banner");
+    banner.textContent = `${opponentName} wants a rematch! Do you accept?`;
+    banner.classList.remove("hidden", "refused");
+    document.getElementById("gameover-default-actions").classList.add("hidden");
+    document.getElementById("rematch-response-actions").classList.remove("hidden");
+  }
+
+  showLocalRematchPrompt(p1Name, p2Name) {
+    document.getElementById("modal-title").textContent = "Rematch Request";
+    document.getElementById("modal-body").innerHTML = `
+      <p><strong>${p1Name}</strong> wants a rematch! <strong>${p2Name}</strong>, do you accept?</p>
+      <div style="display:flex; gap:12px; margin-top:18px;">
+        <button class="menu-btn" style="width:50%; border-color:#2e7d32;" onclick="ui.resolveLocalRematch(true)">Accept</button>
+        <button class="menu-btn" style="width:50%; border-color:#8c2318; color:#8c2318;" onclick="ui.resolveLocalRematch(false)">Refuse</button>
+      </div>
+    `;
+    document.getElementById("modal-close-btn").classList.add("hidden");
+    document.getElementById("overlay-info").classList.remove("hidden");
+  }
+
+  resolveLocalRematch(accepted) {
+    document.getElementById("modal-close-btn").classList.remove("hidden");
+    document.getElementById("overlay-info").classList.add("hidden");
+    if (accepted) {
+      this.client.startLocalMatch(this.client.game.players[0].name, this.client.game.players[1].name, false);
+    } else {
+      this.handleRematchRefused(`${this.client.game.players[1].name} refused the rematch.`);
+    }
+  }
+
+  handleRematchRefused(message) {
+    document.getElementById("rematch-response-actions").classList.add("hidden");
+    document.getElementById("gameover-default-actions").classList.remove("hidden");
+    document.getElementById("btn-rematch").classList.add("hidden");
+    const banner = document.getElementById("rematch-banner");
+    banner.textContent = message;
+    banner.classList.remove("hidden");
+    banner.classList.add("refused");
+  }
+
+  drawLocalBoard(board) {
+    const g = this.client.game;
+    const gridData = board.grid.map(row => row.map(d => (d ? d.getColor() : null)));
+    const active = g.FindPlayer();
+    const moves = active.isBot ? [] : board.getValidMoves(active.color).map(m => ({ x: m.getX(), y: m.getY() }));
+    this._renderGrid(
+      gridData,
+      active.color,
+      moves,
+      { Black: g.players[0].name, White: g.players[1].name },
+      active.color,
+      g.players[1].isBot
+    );
+    this.displayClockSeconds(active.Timer.getTimeRemaining());
+  }
+
+  drawOnlineBoard(gridData, currentTurnColor, validMoves, players, myColor) {
+    this.lastOnlineState = { gridData, currentTurnColor, validMoves, players, myColor };
+    const visibleMoves = (currentTurnColor === myColor) ? validMoves : [];
+    this._renderGrid(gridData, currentTurnColor, visibleMoves, players, myColor, false);
+  }
+
+  _renderGrid(gridData, currentTurnColor, validMoves, players, myColor, isBot) {
+    let blackCount = 0, whiteCount = 0;
+    gridData.forEach(row => row.forEach(c => {
+      if (c === "Black") blackCount++;
+      if (c === "White") whiteCount++;
+    }));
+
+    document.getElementById("name-black").textContent = players.Black;
+    document.getElementById("name-white").textContent = players.White;
+    document.getElementById("avatar-white").textContent = isBot ? "🤖" : "🧑";
+    document.getElementById("score-black").textContent = blackCount;
+    document.getElementById("score-white").textContent = whiteCount;
+
+    document.getElementById("card-black").classList.toggle("active-turn", currentTurnColor === "Black");
+    document.getElementById("card-white").classList.toggle("active-turn", currentTurnColor === "White");
+
+    if (this.client.isConnected) {
+      document.getElementById("turn-indicator").textContent =
+        (currentTurnColor === myColor) ? "YOUR TURN:" : `${players[currentTurnColor].toUpperCase()}'S TURN:`;
+    } else {
+      document.getElementById("turn-indicator").textContent = `${players[currentTurnColor].toUpperCase()}'S TURN:`;
+    }
+
+    const container = document.getElementById("board-container");
+    container.innerHTML = "";
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const cell = document.createElement("div");
+        cell.className = "cell " + ((r + c) % 2 === 0 ? "light" : "dark");
+        cell.onclick = () => this.onCellClicked(new Position(r, c));
+
+        const color = gridData[r][c];
+        if (color) {
+          const discEl = document.createElement("div");
+          discEl.className = `disc ${color}`;
+          cell.appendChild(discEl);
+        } else if (this.showHints && validMoves.some(m => m.x === r && m.y === c)) {
+          const hint = document.createElement("div");
+          hint.className = "valid-hint";
+          cell.appendChild(hint);
+        }
+        container.appendChild(cell);
+      }
+    }
+  }
+
+  displayClockSeconds(seconds) {
+    const rem = Math.max(0, seconds);
+    const mins = String(Math.floor(rem / 60)).padStart(2, "0");
+    const secs = String(rem % 60).padStart(2, "0");
+    const el = document.getElementById("clock-text");
+    el.textContent = `${mins}:${secs}`;
+    el.classList.toggle("low-time", rem <= 10);
+  }
+
+  showToast(msg) {
+    const el = document.getElementById("game-toast");
+    el.textContent = msg;
+    setTimeout(() => { if (el.textContent === msg) el.textContent = ""; }, 3200);
+  }
+
+  closeOverlay() {
+    document.getElementById("overlay-info").classList.add("hidden");
+  }
+
+  onCellClicked(pos) {
+    document.getElementById("game-toast").textContent = "";
+    this.client.sendMove(pos);
+  }
+
+  submitNames() {
+    const p1 = document.getElementById("input-p1").value.trim();
+    const p2 = document.getElementById("input-p2").value.trim();
+    const errorEl = document.getElementById("name-error");
+
+    if (!p1) { errorEl.textContent = "Please enter Player 1's name."; return; }
+
+    if (this.pendingMode === "local") {
+      if (!p2) { errorEl.textContent = "Please enter Player 2's name."; return; }
+      this.client.startLocalMatch(p1, p2, false);
+    } else if (this.pendingMode === "bot") {
+      this.client.startLocalMatch(p1, "Bob", true);
+    } else if (this.pendingMode === "online") {
+      this.client.localPlayer.name = p1;
+      this.showMenu("OnlineMenu");
+      this.client.connect(SERVER_WS_URL);
+    }
+  }
+
+  onMenuChoice(choice) {
+    switch (choice) {
+      case "local":
+        this.pendingMode = "local";
+        document.getElementById("name-ribbon").textContent = "1V1 LOCAL MATCH";
+        document.getElementById("p2-input-group").classList.remove("hidden");
+        document.getElementById("btn-submit-names").textContent = "Start Match";
+        this.showMenu("NameEntry");
+        break;
+      case "bot":
+        this.pendingMode = "bot";
+        document.getElementById("name-ribbon").textContent = "MATCH AGAINST AI (BOB)";
+        document.getElementById("p2-input-group").classList.add("hidden");
+        document.getElementById("btn-submit-names").textContent = "Start Match";
+        this.showMenu("NameEntry");
+        break;
+      case "online":
+        this.pendingMode = "online";
+        document.getElementById("name-ribbon").textContent = "ONLINE MULTIPLAYER";
+        document.getElementById("p2-input-group").classList.add("hidden");
+        document.getElementById("btn-submit-names").textContent = "Connect to Server";
+        this.showMenu("NameEntry");
+        break;
+      case "randomQueue":
+        document.getElementById("waiting-box").classList.remove("hidden");
+        document.getElementById("waiting-text").textContent = "Searching random matchmaking queue...";
+        this.client.joinRandomQueue();
+        break;
+      case "createPrivate":
+        this.client.createPrivateGame();
+        break;
+      case "joinPrivate":
+        const code = document.getElementById("input-room-code").value.trim().toUpperCase();
+        if (code.length !== 4) { alert("Please enter a valid 4-character room code."); return; }
+        this.client.joinPrivateGame(code);
+        break;
+      case "cancelSearch":
+        this.client.cancelSearch();
+        document.getElementById("waiting-box").classList.add("hidden");
+        break;
+      case "forfeit":
+        this.client.sendForfeit();
+        break;
+      case "rules":
+        document.getElementById("modal-close-btn").classList.remove("hidden");
+        document.getElementById("modal-title").textContent = "Reversi Rules";
+        document.getElementById("modal-body").innerHTML = this.client.localPlayer.GetRules();
+        document.getElementById("overlay-info").classList.remove("hidden");
+        break;
+      case "settings":
+        document.getElementById("modal-close-btn").classList.remove("hidden");
+        document.getElementById("modal-title").textContent = "Game Settings";
+        document.getElementById("modal-body").innerHTML = `
+          <label style="display:flex; align-items:center; gap:10px; font-weight:700; cursor:pointer;">
+            <input type="checkbox" ${this.showHints ? "checked" : ""}
+              onchange="ui.toggleHints(this.checked)" />
+            Highlight Legal Moves on Board
+          </label>
+        `;
+        document.getElementById("overlay-info").classList.remove("hidden");
+        break;
+      case "newGame":
+        this.client.requestRematch();
+        break;
+      case "acceptRematch":
+        this.client.acceptRematch();
+        break;
+      case "refuseRematch":
+        this.client.refuseRematch();
+        break;
+      case "quit":
+        alert("Thanks for playing MyReversi!");
+        break;
+    }
+  }
+
+  toggleHints(enabled) {
+    this.showHints = enabled;
+    if (this.client.isConnected && this.lastOnlineState) {
+      const s = this.lastOnlineState;
+      this.drawOnlineBoard(s.gridData, s.currentTurnColor, s.validMoves, s.players, s.myColor);
+    } else if (this.client.game) {
+      this.drawLocalBoard(this.client.game.board);
+    }
+  }
+}
+
+const client = new Client(new Player("", "Black", false));
+const ui = new UI(client);
+</script>
+</body>
+</html>
