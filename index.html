@@ -237,6 +237,7 @@
   </div>
 
 <script>
+// REPLACE THIS WITH YOUR RENDER SERVICE URL AFTER DEPLOYING PART 1:
 const SERVER_WS_URL = "wss://YOUR-RENDER-APP.onrender.com";
 
 /**
@@ -613,12 +614,10 @@ class Client {
       this._sendPacket({ type: "REMATCH_REQUEST" });
     } else if (this.game) {
       const isBot = this.game.isBotGame(this.game.players);
-      if (isBot) {
-        this.startLocalMatch(this.game.players[0].name, "Bob", true);
-      } else {
-        // CORRECTION 2: For Local 1v1, return to the Name Entry / New Game setup screen instead of rematch
-        this.ui.showMenu("NameEntry");
-      }
+      // For both AI and Local 1v1, restart immediately like "New Game"
+      const p1Name = this.game.players[0].name;
+      const p2Name = isBot ? "Bob" : this.game.players[1].name;
+      this.startLocalMatch(p1Name, p2Name, isBot);
     }
   }
 
@@ -763,10 +762,8 @@ class UI {
     const rematchBtn = document.getElementById("btn-rematch");
     rematchBtn.classList.remove("hidden");
     rematchBtn.disabled = false;
-    
-    // CORRECTION 2: Change button text and behavior if it's a local 1v1 match vs bot/online
-    const isLocal1v1 = !this.client.isConnected && !isBot;
-    rematchBtn.textContent = isLocal1v1 ? "New Game" : (isBot ? "Start a New Game" : "Rematch");
+    // Set button text to "Start a New Game" for both AI and local 1v1 modes
+    rematchBtn.textContent = (isBot || !this.client.isConnected) ? "Start a New Game" : "Rematch";
 
     document.getElementById("overlay-gameover").classList.remove("hidden");
   }
@@ -980,13 +977,7 @@ class UI {
         this.client.refuseRematch();
         break;
       case "quit":
-        // CORRECTION 1: Attempt to close page / window; show fallback message if blocked by browser security
-        try {
-          window.close();
-        } catch (e) {}
-        setTimeout(() => {
-          alert("Thanks for playing MyReversi! You can now safely close this browser tab.");
-        }, 100);
+        alert("Thanks for playing MyReversi!");
         break;
     }
   }
